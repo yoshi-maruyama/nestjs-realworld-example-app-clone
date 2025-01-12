@@ -1,4 +1,19 @@
 services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: nestdb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - nest-network
+
   app:
     build:
       context: .
@@ -8,3 +23,15 @@ services:
     ports:
       - '3000:3000'
     command: pnpm run start:dev
+    networks:
+      - nest-network
+    depends_on:
+      - db
+
+volumes:
+  mysql-data:
+    driver: local
+
+networks:
+  nest-network:
+    driver: bridge
