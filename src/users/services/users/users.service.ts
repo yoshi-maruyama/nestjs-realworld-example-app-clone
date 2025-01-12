@@ -1,10 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { create } from 'domain';
+import { Post } from 'src/typeorm/entities/Post';
 import { Profile } from 'src/typeorm/entities/Profile';
 import { User } from 'src/typeorm/entities/User';
 import {
   CreateUserParams,
+  CreateUserPostParams,
   CreateUSerProfileParams,
   UpdateUserParams,
 } from 'src/utils/types';
@@ -15,10 +16,11 @@ export class UsersService {
   constructor(
     @InjectRepository(User) private userReopsitory: Repository<User>,
     @InjectRepository(Profile) private profileRepository: Repository<Profile>,
+    @InjectRepository(Post) private postRepository: Repository<Post>,
   ) {}
 
   findUsers() {
-    return this.userReopsitory.find();
+    return this.userReopsitory.find({ relations: ['profile', 'posts'] });
   }
 
   createUser(userDetails: CreateUserParams) {
@@ -49,5 +51,20 @@ export class UsersService {
     const savedProfile = await this.profileRepository.save(newProfile);
     user.profile = savedProfile;
     return this.userReopsitory.save(user);
+  }
+
+  async createUserPost(
+    id: number,
+    createUserPostDetails: CreateUserPostParams,
+  ) {
+    const user = await this.userReopsitory.findOneBy({ id });
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
+    }
+    const newPost = this.postRepository.create({
+      ...createUserPostDetails,
+      user,
+    });
+    return this.postRepository.save(newPost);
   }
 }
